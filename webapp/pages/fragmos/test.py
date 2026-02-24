@@ -1,8 +1,11 @@
 import drawpyo
 import os
 
-if os.path.exists("/workspaces/Fragmos/webapp/pages/fragmos/Xuita.xml"):
-    os.remove("/workspaces/Fragmos/webapp/pages/fragmos/Xuita.xml")
+script_dir = os.path.dirname(os.path.abspath(__file__))
+
+file_path = os.path.join(script_dir, "Xuita.xml")
+if os.path.exists(file_path):
+    os.remove(file_path)
 
 class Base(drawpyo.diagram.Object):
     def __init__(self, page, value, x, y, center_x=None):
@@ -303,34 +306,62 @@ class Render():
 
 
 test = drawpyo.File()
-test.file_path = "/workspaces/Fragmos/webapp/pages/fragmos"
 test.file_name = "Xuita.xml"
+test.file_path = script_dir
 
 nodes = [
     {"type": "start", "value": "Начало"},
-    {"type": "process", "value": "i = 10"},
+    {"type": "process", "value": "x = 2"},
     {
         "type": "if",
-        "value": "i > 5",
+        "value": "x > 0",
         "children": [
-            {"type": "process", "value": "j = 5"},
+            {"type": "execute", "value": "output >> 'Внутри IF'"},
             {
                 "type": "while",
-                "value": "j != 0",
+                "value": "x < 5",
                 "children": [
-                    {"type": "process", "value": "output >> j"},
-                    {"type": "process", "value": "j = j - 1"},
+                    {"type": "process", "value": "y = 3"},
+                    {
+                        "type": "while",
+                        "value": "y > 0",
+                        "children": [
+                            {"type": "execute", "value": "output >> y"},
+                            {
+                                "type": "if",
+                                "value": "y % 2 == 0",
+                                "children": [
+                                    {"type": "execute", "value": "output >> 'четное'"},
+                                ],
+                                "else_children": [
+                                    {"type": "execute", "value": "output >> 'нечетное'"},
+                                ]
+                            },
+                            {"type": "process", "value": "y = y - 1"},
+                            {"type": "execute", "value": "output >> 'итерация внутреннего while'"},
+                        ]
+                    },
+                    {"type": "process", "value": "x = x + 1"},
+                    {"type": "execute", "value": "output >> 'итерация внешнего while'"},
                 ]
             },
+            {"type": "execute", "value": "output >> 'Выход из внешнего while'"},
         ],
         "else_children": [
-            {"type": "process", "value": "output >> 'i <= 5'"},
+            {"type": "execute", "value": "output >> 'x <= 0'"},
+            {
+                "type": "while",
+                "value": "x < 0",
+                "children": [
+                    {"type": "execute", "value": "output >> 'в else while'"},
+                    {"type": "process", "value": "x = x + 1"},
+                ]
+            },
         ]
     },
-    {"type": "execute", "value": "output >> 'Конец цикла'"},
+    {"type": "execute", "value": "output >> 'После IF полностью'"},
     {"type": "stop", "value": "Конец"}
 ]
-
 page = drawpyo.Page(file=test)
 
 renderer = Render(page, nodes, x=100, y=0, center_x=200)
