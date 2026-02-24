@@ -7,7 +7,7 @@ def util_sidebar():
         '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />',
         unsafe_allow_html=True
     )
-
+  
     # основной css
     css_path = Path(__file__).parent.parent / "static" / "css" / "sidebar.css"
 
@@ -23,15 +23,13 @@ def util_sidebar():
             st.switch_page("home.py")
 
         # PAGE 1
-        if st.button("Создание Jinja шаблона", icon=":material/edit_document:"):
+        if st.button("Генератор отчётов", icon=":material/edit_document:"):
             st.switch_page("pages/Template.py")
 
         # PAGE 2
-        if st.button("Создание блок схемы", icon=":material/schema:"):
+        if st.button("Генератор блоксхем", icon=":material/schema:"):
             st.switch_page("pages/SchemeAI.py")
 
-        if st.button("Text to json"):
+        if st.button("Баг репорт", icon=":material/bug_report:"):
             st.switch_page("pages/page3.py")
 
-        if st.button("Dataset maker", icon=":material/dataset:"):
-            st.switch_page("pages/page4.py")

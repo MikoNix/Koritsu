@@ -1,13 +1,13 @@
+import random
+from time import time
 import streamlit as st
-from pages.modules import util_sidebar
-from pathlib import Path
+import os
 
+
+from pages.modules import util_sidebar
 util_sidebar()
 
-st.markdown("## ТУТ НИЧЕГО НЕТ ")
-
-# Автопоиск файла quality=95.gif
-base_dir = Path(__file__).resolve().parent
-gif_path = next(base_dir.rglob("quality=95.gif"), None)
-
-st.image(str(gif_path))
+"# ТУТ нечего нет (пока что) "
+random_image = random.randint(1, 2)
+image_path = os.path.abspath(f'static/media/{random_image}.gif')
+st.image(image_path, use_container_width=True) 
