@@ -719,29 +719,28 @@ def _split_functions(nodes):
 # ЗАПУСК
 # ═══════════════════════════════════════════════════════════════════════════
 
-def generate(frg_path, out_path=None, cfg_overrides=None):
+def generate(json_path, out_path=None, cfg_overrides=None):
     """
-    Генерирует .xml блок-схему из .frg файла.
+    Генерирует .xml блок-схему из .json файла.
 
-    frg_path      — путь к .frg файлу
-    out_path      — путь для сохранения .xml (по умолчанию рядом с .frg)
+    json_path     — путь к .json файлу
+    out_path      — путь для сохранения .xml (по умолчанию рядом с .json)
     cfg_overrides — словарь с переопределениями настроек (необязательно)
     """
     import sys
     _pkg_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     if _pkg_root not in sys.path:
         sys.path.insert(0, _pkg_root)
-    from parser import parse_frg_file
-
     base_cfg = None
     if cfg_overrides:
         base_cfg = dict(DEFAULT_CFG)
         base_cfg.update(cfg_overrides)
 
-    cfg, nodes = parse_frg_file(frg_path, base_cfg=base_cfg)
+    from parser import parse_frg_json_file
+    cfg, nodes = parse_frg_json_file(json_path, base_cfg=base_cfg)
 
     if out_path is None:
-        base = os.path.splitext(frg_path)[0]
+        base = os.path.splitext(json_path)[0]
         out_path = base + ".xml"
 
     if os.path.exists(out_path):
