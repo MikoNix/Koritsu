@@ -14,39 +14,40 @@ DANGER_RED = "#ef4444"
 # ── Стили ─────────────────────────────────────────────────────────────────────
 
 GLASS_CARD_STYLE = {
-    "background": "rgba(255, 255, 255, 0.05)",
-    "backdrop_filter": "blur(24px)",
-    "border": "1px solid rgba(255, 255, 255, 0.1)",
-    "border_radius": "16px",
-    "box_shadow": "0 8px 32px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2)",
+    "background": "rgba(255, 255, 255, 0.04)",
+    "backdrop_filter": "blur(40px) saturate(180%)",
+    "border": "1px solid rgba(255, 255, 255, 0.08)",
+    "border_radius": "20px",
+    "box_shadow": "0 8px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.07)",
 }
 
 GLASS_CARD_HOVER_STYLE = {
     **GLASS_CARD_STYLE,
     "_hover": {
-        "background": "rgba(255, 255, 255, 0.1)",
-        "border": "1px solid rgba(255, 255, 255, 0.2)",
-        "box_shadow": "0 12px 48px rgba(59, 130, 246, 0.3), 0 4px 12px rgba(0, 0, 0, 0.3)",
-        "transform": "translateY(-4px)",
+        "background": "rgba(255, 255, 255, 0.07)",
+        "border": "1px solid rgba(255, 255, 255, 0.14)",
+        "box_shadow": "0 16px 56px rgba(59, 130, 246, 0.2), 0 4px 16px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
+        "transform": "translateY(-2px)",
     },
-    "transition": "all 0.3s ease",
+    "transition": "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
 }
 
 INPUT_STYLE = {
-    "background": "rgba(255, 255, 255, 0.05)",
+    "background": "rgba(255, 255, 255, 0.06)",
     "border": "1px solid rgba(255, 255, 255, 0.1)",
-    "border_radius": "8px",
-    "padding": "16px",
-    "color": "white",
-    "font_size": "14px",
+    "border_radius": "12px",
+    "padding": "14px 16px",
+    "color": "rgba(255, 255, 255, 0.9)",
+    "font_size": "15px",
     "width": "100%",
     "outline": "none",
-    "backdrop_filter": "blur(12px)",
-    "_placeholder": {"color": "rgba(255, 255, 255, 0.3)"},
+    "backdrop_filter": "blur(20px)",
+    "transition": "all 0.2s ease",
+    "_placeholder": {"color": "rgba(255, 255, 255, 0.25)"},
     "_focus": {
-        "background": "rgba(255, 255, 255, 0.1)",
-        "border": "1px solid rgba(59, 130, 246, 0.5)",
-        "backdrop_filter": "blur(24px)",
+        "background": "rgba(255, 255, 255, 0.09)",
+        "border": "1px solid rgba(59, 130, 246, 0.6)",
+        "box_shadow": "0 0 0 3px rgba(59, 130, 246, 0.12)",
     },
 }
 
@@ -57,22 +58,27 @@ GRADIENT_BUTTON_STYLE = {
     "border": "none",
     "padding": "12px 24px",
     "cursor": "pointer",
-    "transition": "all 0.3s ease",
+    "font_weight": "500",
+    "font_size": "14px",
+    "transition": "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
     "_hover": {
-        "box_shadow": f"0 4px 16px rgba(59, 130, 246, 0.5)",
+        "box_shadow": "0 6px 24px rgba(59, 130, 246, 0.5)",
+        "transform": "translateY(-1px)",
     },
 }
 
 SIDEBAR_STYLE = {
-    "width": "256px",
-    "padding": "24px",
+    "width": "240px",
+    "min_width": "240px",
+    "padding": "28px 20px",
     "flex_shrink": "0",
-    "border_right": "1px solid rgba(255, 255, 255, 0.1)",
+    "border_right": "1px solid rgba(255, 255, 255, 0.07)",
+    "background": "rgba(0, 0, 0, 0.15)",
 }
 
 MAIN_CONTENT_STYLE = {
     "flex_grow": "1",
-    "padding": "32px",
+    "padding": "36px 40px",
     "overflow_y": "auto",
     "min_height": "600px",
 }
@@ -85,13 +91,13 @@ LAYOUT_STYLE = {
 }
 
 CONTAINER_STYLE = {
-    "width": "1024px",
+    "width": "1080px",
     "max_width": "100%",
-    "background": "rgba(255, 255, 255, 0.03)",
-    "backdrop_filter": "blur(24px)",
-    "border": "1px solid rgba(255, 255, 255, 0.1)",
-    "border_radius": "24px",
-    "box_shadow": "0 8px 32px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2)",
+    "background": "rgba(18, 18, 26, 0.75)",
+    "backdrop_filter": "blur(60px) saturate(200%)",
+    "border": "1px solid rgba(255, 255, 255, 0.08)",
+    "border_radius": "28px",
+    "box_shadow": "0 32px 80px rgba(0, 0, 0, 0.6), 0 4px 16px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06)",
     "overflow": "hidden",
     "display": "flex",
     "position": "relative",
@@ -144,31 +150,41 @@ def sidebar_item(
 ) -> rx.Component:
     """Элемент меню сайдбара."""
     return rx.link(
-        rx.box(
-            icon,
-            color=rx.cond(is_active, ACCENT_BLUE, TEXT_TERTIARY),
-            size=20,
-        ),
-        rx.text(
-            label,
-            color=rx.cond(is_active, "white", "rgba(255, 255, 255, 0.5)"),
-            font_size="14px",
-            font_weight="500",
+        rx.hstack(
+            rx.box(
+                icon,
+                width="32px",
+                height="32px",
+                display="flex",
+                align_items="center",
+                justify_content="center",
+                border_radius="9px",
+                background=rx.cond(is_active, "rgba(59,130,246,0.2)", "rgba(255,255,255,0.04)"),
+                border=rx.cond(is_active, "1px solid rgba(59,130,246,0.3)", "1px solid rgba(255,255,255,0.06)"),
+                flex_shrink="0",
+            ),
+            rx.text(
+                label,
+                color=rx.cond(is_active, "rgba(255,255,255,0.95)", "rgba(255,255,255,0.45)"),
+                font_size="13.5px",
+                font_weight=rx.cond(is_active, "500", "400"),
+            ),
+            gap="10px",
+            align="center",
+            width="100%",
         ),
         href=href,
-        display="flex",
-        align_items="center",
-        gap="12px",
-        padding="12px 16px",
+        display="block",
+        padding="8px 10px",
         border_radius="12px",
         cursor="pointer",
-        transition="all 0.3s ease",
+        transition="all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
         text_decoration="none",
-        background=rx.cond(is_active, "rgba(255, 255, 255, 0.1)", "transparent"),
-        border=rx.cond(is_active, "1px solid rgba(255, 255, 255, 0.2)", "1px solid transparent"),
-        box_shadow=rx.cond(is_active, "0 4px 16px rgba(59, 130, 246, 0.2)", "none"),
+        background=rx.cond(is_active, "rgba(255,255,255,0.07)", "transparent"),
+        border=rx.cond(is_active, "1px solid rgba(255,255,255,0.1)", "1px solid transparent"),
         _hover={
-            "background": "rgba(255, 255, 255, 0.05)",
+            "background": "rgba(255,255,255,0.05)",
+            "border": "1px solid rgba(255,255,255,0.08)",
         },
     )
 
@@ -177,40 +193,44 @@ def sidebar() -> rx.Component:
     """Левая панель навигации."""
     return rx.box(
         rx.vstack(
-            rx.text(
-                "Настройки",
-                color=TEXT_PRIMARY,
-                font_size="24px",
-                font_weight="600",
-                margin_bottom="4px",
-            ),
-            rx.text(
-                "Управление аккаунтом",
-                color=TEXT_TERTIARY,
-                font_size="14px",
-                margin_bottom="24px",
+            rx.box(
+                rx.text(
+                    "Настройки",
+                    color=TEXT_PRIMARY,
+                    font_size="17px",
+                    font_weight="600",
+                    letter_spacing="-0.01em",
+                ),
+                rx.text(
+                    "Управление аккаунтом",
+                    color=TEXT_TERTIARY,
+                    font_size="12px",
+                    margin_top="2px",
+                ),
+                padding_bottom="20px",
+                border_bottom="1px solid rgba(255,255,255,0.06)",
+                width="100%",
+                margin_bottom="12px",
             ),
             sidebar_item(
-                rx.icon("user", size=20),
+                rx.icon("user", size=15, color=rx.cond(ProfileState.is_account_active, ACCENT_BLUE, "rgba(255,255,255,0.45)")),
                 "Аккаунт",
                 "/profile",
                 is_active=ProfileState.is_account_active,
             ),
-            rx.box(height="4px"),
             sidebar_item(
-                rx.icon("folder-open", size=20),
+                rx.icon("folder-open", size=15, color=rx.cond(ProfileState.is_files_active, ACCENT_BLUE, "rgba(255,255,255,0.45)")),
                 "Файлы",
                 "/profile/files",
                 is_active=ProfileState.is_files_active,
             ),
-            rx.box(height="4px"),
             sidebar_item(
-                rx.icon("users", size=20),
+                rx.icon("users", size=15, color=rx.cond(ProfileState.is_referral_active, ACCENT_BLUE, "rgba(255,255,255,0.45)")),
                 "Реферальная программа",
                 "/profile/referral",
                 is_active=ProfileState.is_referral_active,
             ),
-            spacing="0",
+            spacing="1",
             align="start",
             width="100%",
         ),
@@ -225,61 +245,60 @@ def sidebar() -> rx.Component:
 
 
 def avatar_component() -> rx.Component:
-    """Аватар пользователя."""
+    """Аватар пользователя — круглый."""
     return rx.box(
         rx.cond(
             ProfileState.avatar_url != "",
-            # Реальный аватар из API
             rx.el.img(
                 src=ProfileState.avatar_url,
                 alt="Avatar",
-                width="128px",
-                height="128px",
+                width="96px",
+                height="96px",
                 object_fit="cover",
-                border_radius="16px",
+                border_radius="50%",
             ),
-            # Градиентный аватар с инициалами
             rx.box(
                 rx.text(
                     ProfileState.user_initial,
                     color="white",
-                    font_size="36px",
+                    font_size="32px",
                     font_weight="700",
                 ),
-                width="128px",
-                height="128px",
+                width="96px",
+                height="96px",
                 background=f"linear-gradient(135deg, {ACCENT_BLUE}, {ACCENT_PURPLE})",
-                border_radius="16px",
+                border_radius="50%",
                 display="flex",
                 align_items="center",
                 justify_content="center",
-                box_shadow=f"0 4px 16px rgba(59, 130, 246, 0.2)",
+                box_shadow="0 4px 20px rgba(59, 130, 246, 0.3)",
             ),
         ),
-        # Индикатор статуса
+        # Индикатор онлайн
         rx.box(
-            width="32px",
-            height="32px",
+            width="18px",
+            height="18px",
             background=SUCCESS_GREEN,
             border_radius="50%",
             position="absolute",
-            bottom="8px",
-            right="8px",
-            border=f"4px solid {BG_COLOR}",
+            bottom="4px",
+            right="4px",
+            border="3px solid rgba(18,18,26,0.9)",
+            box_shadow="0 0 0 1px rgba(34,197,94,0.4)",
         ),
-        # Кнопка загрузки при наведении
+        # Оверлей камеры при наведении
         rx.box(
-            rx.icon("camera", size=24, color="white"),
+            rx.icon("camera", size=20, color="white"),
             width="100%",
             height="100%",
-            background="rgba(0, 0, 0, 0.6)",
-            border_radius="16px",
+            background="rgba(0, 0, 0, 0.55)",
+            border_radius="50%",
             display="flex",
             align_items="center",
             justify_content="center",
             opacity="0",
             cursor="pointer",
-            transition="opacity 0.3s ease",
+            transition="opacity 0.25s ease",
             _hover={"opacity": "1"},
             position="absolute",
             top="0",
@@ -306,12 +325,6 @@ def user_info() -> rx.Component:
             "@" + ProfileState.username,
             color=TEXT_SECONDARY,
             font_size="18px",
-            margin_bottom="6px",
-        ),
-        rx.text(
-            ProfileState.email,
-            color=TEXT_TERTIARY,
-            font_size="16px",
         ),
         spacing="0",
         align="start",
@@ -323,13 +336,13 @@ def profile_card() -> rx.Component:
     return rx.box(
         rx.hstack(
             avatar_component(),
-            rx.box(height="1px", width="1px", flex_grow="1"),
             user_info(),
             width="100%",
             align="center",
+            gap="24px",
         ),
-        padding="32px",
-        margin_bottom="24px",
+        padding="28px 32px",
+        margin_bottom="20px",
         **GLASS_CARD_STYLE,
     )
 
@@ -337,14 +350,51 @@ def profile_card() -> rx.Component:
 def settings_header() -> rx.Component:
     """Заголовок секции настроек."""
     return rx.text(
-        "НАСТРОЙКИ",
-        color=TEXT_SECONDARY,
-        font_size="14px",
+        "УЧЁТНЫЕ ДАННЫЕ",
+        color="rgba(255,255,255,0.25)",
+        font_size="11px",
         font_weight="600",
         letter_spacing="0.1em",
         text_transform="uppercase",
-        margin_bottom="16px",
-        padding_x="8px",
+        margin_bottom="10px",
+        padding_x="4px",
+    )
+
+
+def _pw_req_row(check: bool, label: str) -> rx.Component:
+    return rx.hstack(
+        rx.cond(
+            check,
+            rx.icon("circle-check", size=13, color=SUCCESS_GREEN),
+            rx.icon("circle-dot", size=13, color="rgba(255,255,255,0.25)"),
+        ),
+        rx.text(
+            label,
+            font_size="12px",
+            color=rx.cond(check, SUCCESS_GREEN, "rgba(255,255,255,0.4)"),
+        ),
+        gap="6px",
+        align="center",
+        transition="color 0.2s ease",
+    )
+
+
+def password_requirements() -> rx.Component:
+    """Подсказка с требованиями к паролю."""
+    return rx.box(
+        rx.vstack(
+            _pw_req_row(ProfileState.pw_check_length, "Не менее 12 символов"),
+            _pw_req_row(ProfileState.pw_check_upper, "Хотя бы одна заглавная буква (A–Z или А–Я)"),
+            _pw_req_row(ProfileState.pw_check_special, "Хотя бы один спецсимвол (!@#$%^&* ...)"),
+            spacing="1",
+            align="start",
+        ),
+        padding="10px 14px",
+        border_radius="10px",
+        background="rgba(255,255,255,0.03)",
+        border="1px solid rgba(255,255,255,0.07)",
+        margin_top="8px",
+        width="100%",
     )
 
 
@@ -358,44 +408,77 @@ def edit_field_row(
     cancel_fn,
     set_input_fn,
     is_password: bool = False,
+    old_password_value: str = "",
+    set_old_password_fn=None,
 ) -> rx.Component:
     """Строка редактируемого поля."""
     return rx.box(
         rx.hstack(
-            rx.text(
-                label,
-                color=TEXT_SECONDARY,
-                font_size="14px",
+            rx.vstack(
+                rx.text(
+                    label,
+                    color=TEXT_TERTIARY,
+                    font_size="11px",
+                    font_weight="500",
+                    letter_spacing="0.06em",
+                    text_transform="uppercase",
+                ),
+                rx.cond(
+                    is_editing,
+                    rx.box(),
+                    rx.text(
+                        value,
+                        color=TEXT_PRIMARY,
+                        font_size="15px",
+                        margin_top="2px",
+                    ),
+                ),
+                spacing="0",
+                align="start",
                 flex_grow="1",
             ),
             rx.cond(
                 is_editing,
                 rx.hstack(
                     rx.box(
-                        rx.icon("check", size=18, color=SUCCESS_GREEN),
+                        rx.icon("check", size=16, color=SUCCESS_GREEN),
                         padding="8px",
                         cursor="pointer",
                         on_click=save_fn,
+                        border_radius="8px",
+                        background="rgba(34,197,94,0.1)",
+                        border="1px solid rgba(34,197,94,0.2)",
                         transition="all 0.2s",
-                        _hover={"transform": "scale(1.1)"},
+                        _hover={"background": "rgba(34,197,94,0.2)", "transform": "scale(1.05)"},
                     ),
                     rx.box(
-                        rx.icon("x", size=18, color=DANGER_RED),
+                        rx.icon("x", size=16, color="rgba(255,255,255,0.5)"),
                         padding="8px",
                         cursor="pointer",
                         on_click=cancel_fn,
+                        border_radius="8px",
+                        background="rgba(255,255,255,0.05)",
+                        border="1px solid rgba(255,255,255,0.08)",
                         transition="all 0.2s",
-                        _hover={"transform": "scale(1.1)"},
+                        _hover={"background": "rgba(255,255,255,0.1)", "transform": "scale(1.05)"},
                     ),
-                    spacing="2",
+                    gap="8px",
+                    align="center",
                 ),
                 rx.box(
-                    rx.icon("pencil", size=18, color=ACCENT_BLUE),
+                    rx.icon("pencil", size=14, color="rgba(255,255,255,0.35)"),
                     padding="8px",
                     cursor="pointer",
                     on_click=start_edit_fn,
+                    border_radius="8px",
+                    background="rgba(255,255,255,0.0)",
+                    border="1px solid rgba(255,255,255,0.0)",
                     transition="all 0.2s",
-                    _hover={"transform": "scale(1.1)"},
+                    _hover={
+                        "background": "rgba(255,255,255,0.07)",
+                        "border": "1px solid rgba(255,255,255,0.1)",
+                        "color": "white",
+                    },
                 ),
             ),
             width="100%",
@@ -404,55 +487,156 @@ def edit_field_row(
         ),
         rx.cond(
             is_editing,
-            rx.el.input(
-                value=input_value,
-                on_change=set_input_fn,
-                type="password" if is_password else "text",
-                placeholder="Введите значение...",
-                **INPUT_STYLE,
-                margin_top="12px",
+            rx.vstack(
+                rx.cond(
+                    is_password,
+                    rx.el.input(
+                        value=old_password_value,
+                        on_change=set_old_password_fn,
+                        type="password",
+                        placeholder="Текущий пароль",
+                        **INPUT_STYLE,
+                        margin_top="14px",
+                    ),
+                    rx.box(),
+                ),
+                rx.el.input(
+                    value=input_value,
+                    on_change=set_input_fn,
+                    type="password" if is_password else "text",
+                    placeholder="Новый пароль" if is_password else "Новое значение",
+                    **INPUT_STYLE,
+                    margin_top="8px",
+                ),
+                rx.cond(
+                    is_password,
+                    password_requirements(),
+                    rx.box(),
+                ),
+                spacing="0",
+                width="100%",
             ),
-            rx.text(
-                value,
-                color=TEXT_PRIMARY,
-                font_size="16px",
-                padding="16px",
-            ),
+            rx.box(),
         ),
-        padding="20px",
-        border_bottom="1px solid rgba(255, 255, 255, 0.1)",
+        padding="20px 24px",
+        border_bottom="1px solid rgba(255, 255, 255, 0.06)",
+        transition="background 0.2s ease",
+        _hover={"background": "rgba(255,255,255,0.02)"},
+    )
+
+
+def profile_message_banner() -> rx.Component:
+    """Баннер с сообщением об успехе или ошибке."""
+    return rx.cond(
+        ProfileState.profile_message != "",
+        rx.box(
+            rx.text(
+                ProfileState.profile_message,
+                font_size="14px",
+                color=rx.cond(ProfileState.profile_message_is_error, DANGER_RED, SUCCESS_GREEN),
+            ),
+            padding="12px 20px",
+            border_radius="10px",
+            background=rx.cond(
+                ProfileState.profile_message_is_error,
+                "rgba(239, 68, 68, 0.1)",
+                "rgba(34, 197, 94, 0.1)",
+            ),
+            border=rx.cond(
+                ProfileState.profile_message_is_error,
+                "1px solid rgba(239, 68, 68, 0.3)",
+                "1px solid rgba(34, 197, 94, 0.3)",
+            ),
+            margin_bottom="16px",
+            width="100%",
+        ),
+    )
+
+
+def password_section() -> rx.Component:
+    """Секция смены пароля."""
+    return rx.box(
+        rx.text(
+            "ПАРОЛЬ",
+            color="rgba(255,255,255,0.25)",
+            font_size="11px",
+            font_weight="600",
+            letter_spacing="0.1em",
+            text_transform="uppercase",
+            margin_bottom="16px",
+        ),
+        rx.vstack(
+            rx.el.input(
+                value=ProfileState.old_password_input,
+                on_change=ProfileState.set_old_password_input,
+                type="password",
+                placeholder="Текущий пароль",
+                **INPUT_STYLE,
+            ),
+            rx.el.input(
+                value=ProfileState.password_input,
+                on_change=ProfileState.set_password_input,
+                type="password",
+                placeholder="Новый пароль",
+                **INPUT_STYLE,
+            ),
+            password_requirements(),
+            rx.cond(
+                ProfileState.profile_message != "",
+                rx.box(
+                    rx.text(
+                        ProfileState.profile_message,
+                        font_size="13px",
+                        color=rx.cond(ProfileState.profile_message_is_error, DANGER_RED, SUCCESS_GREEN),
+                    ),
+                    padding="10px 14px",
+                    border_radius="10px",
+                    background=rx.cond(
+                        ProfileState.profile_message_is_error,
+                        "rgba(239,68,68,0.08)",
+                        "rgba(34,197,94,0.08)",
+                    ),
+                    border=rx.cond(
+                        ProfileState.profile_message_is_error,
+                        "1px solid rgba(239,68,68,0.25)",
+                        "1px solid rgba(34,197,94,0.25)",
+                    ),
+                    width="100%",
+                ),
+            ),
+            rx.el.button(
+                "Сохранить пароль",
+                on_click=ProfileState.save_password,
+                background="rgba(255,255,255,0.08)",
+                color="rgba(255,255,255,0.85)",
+                border="1px solid rgba(255,255,255,0.12)",
+                border_radius="12px",
+                padding="13px 24px",
+                cursor="pointer",
+                font_weight="500",
+                font_size="14px",
+                width="100%",
+                transition="all 0.2s ease",
+                _hover={
+                    "background": "rgba(255,255,255,0.13)",
+                    "border": "1px solid rgba(255,255,255,0.2)",
+                    "color": "white",
+                },
+            ),
+            spacing="3",
+            width="100%",
+        ),
+        padding="28px 32px",
+        border_bottom="1px solid rgba(255,255,255,0.06)",
     )
 
 
 def settings_card() -> rx.Component:
     """Карточка настроек."""
     return rx.box(
-        # Сменить пароль
+        password_section(),
         edit_field_row(
-            "Сменить пароль",
-            ProfileState.password,
-            ProfileState.password_input,
-            ProfileState.editing_password,
-            ProfileState.start_edit_password,
-            ProfileState.save_password,
-            ProfileState.cancel_edit_password,
-            ProfileState.set_password_input,
-            is_password=True,
-        ),
-        # Сменить имя пользователя
-        edit_field_row(
-            "Сменить имя пользователя",
-            ProfileState.username,
-            ProfileState.username_input,
-            ProfileState.editing_username,
-            ProfileState.start_edit_username,
-            ProfileState.save_username,
-            ProfileState.cancel_edit_username,
-            ProfileState.set_username_input,
-        ),
-        # Сменить отображаемое имя
-        edit_field_row(
-            "Сменить отображаемое имя",
+            "Отображаемое имя",
             ProfileState.display_name,
             ProfileState.display_name_input,
             ProfileState.editing_display_name,
@@ -461,6 +645,7 @@ def settings_card() -> rx.Component:
             ProfileState.cancel_edit_display_name,
             ProfileState.set_display_name_input,
         ),
+        overflow="hidden",
         **GLASS_CARD_STYLE,
     )
 
@@ -592,42 +777,22 @@ def files_page() -> rx.Component:
             font_weight="600",
             margin_bottom="24px",
         ),
-        search_bar(),
-        rx.cond(
-            ProfileState.filtered_files.length() > 0,
+        rx.box(
             rx.vstack(
-                rx.foreach(
-                    ProfileState.filtered_files,
-                    lambda f: file_card(f),
+                rx.icon("folder-open", size=40, color=TEXT_TERTIARY),
+                rx.text(
+                    "Раздел в разработке",
+                    color=TEXT_TERTIARY,
+                    font_size="16px",
+                    text_align="center",
+                    margin_top="16px",
                 ),
-                spacing="3",
+                align="center",
                 width="100%",
             ),
-            rx.cond(
-                ProfileState.search_query == "",
-                rx.box(
-                    rx.text(
-                        "Файлы отсутствуют",
-                        color=TEXT_TERTIARY,
-                        font_size="16px",
-                        text_align="center",
-                        padding="32px",
-                    ),
-                    width="100%",
-                    **GLASS_CARD_STYLE,
-                ),
-                rx.box(
-                    rx.text(
-                        "Файлы не найдены",
-                        color=TEXT_TERTIARY,
-                        font_size="16px",
-                        text_align="center",
-                        padding="32px",
-                    ),
-                    width="100%",
-                    **GLASS_CARD_STYLE,
-                ),
-            ),
+            padding="48px",
+            width="100%",
+            **GLASS_CARD_STYLE,
         ),
         spacing="0",
         align="start",
@@ -685,19 +850,7 @@ def stats_row() -> rx.Component:
             "Рефералы",
             ProfileState.total_referrals_count,
         ),
-        stat_card(
-            rx.icon("trending-up", size=20, color="#4ade80"),
-            "rgba(34, 197, 94, 0.2)",
-            "Активные",
-            ProfileState.active_referrals_count,
-        ),
-        stat_card(
-            rx.icon("dollar-sign", size=20, color="#c084fc"),
-            "rgba(168, 85, 247, 0.2)",
-            "Заработано",
-            ProfileState.total_earnings,
-        ),
-        columns="3",
+        columns="1",
         spacing="4",
         margin_bottom="24px",
         width="100%",
@@ -809,7 +962,7 @@ def referral_card(ref_data) -> rx.Component:
                     margin_bottom="4px",
                 ),
                 rx.text(
-                    ref_data.email,
+                    ref_data.date,
                     color=TEXT_TERTIARY,
                     font_size="13px",
                 ),
@@ -1022,40 +1175,237 @@ def _avatar_upload_modal() -> rx.Component:
             # Modal card
             rx.box(
                 rx.vstack(
-                    rx.text(
-                        "Загрузить аватарку",
-                        color=TEXT_PRIMARY,
-                        font_size="18px",
-                        font_weight="600",
-                        margin_bottom="8px",
+                    # Header
+                    rx.hstack(
+                        rx.box(
+                            rx.icon("image", size=18, color=ACCENT_BLUE),
+                            width="36px",
+                            height="36px",
+                            background="rgba(59,130,246,0.12)",
+                            border="1px solid rgba(59,130,246,0.25)",
+                            border_radius="10px",
+                            display="flex",
+                            align_items="center",
+                            justify_content="center",
+                        ),
+                        rx.vstack(
+                            rx.text(
+                                "Загрузить аватарку",
+                                color=TEXT_PRIMARY,
+                                font_size="17px",
+                                font_weight="600",
+                            ),
+                            rx.text(
+                                "Только формат PNG",
+                                color=ACCENT_BLUE,
+                                font_size="12px",
+                                font_weight="500",
+                            ),
+                            spacing="0",
+                            align="start",
+                        ),
+                        gap="12px",
+                        align="center",
+                        width="100%",
                     ),
-                    rx.text(
-                        "Выберите изображение для загрузки",
-                        color=TEXT_SECONDARY,
-                        font_size="13px",
-                        margin_bottom="16px",
+                    # Preview area
+                    rx.cond(
+                        ProfileState.avatar_preview_url != "",
+                        # Показываем превью
+                        rx.vstack(
+                            rx.text(
+                                "Предпросмотр",
+                                color=TEXT_TERTIARY,
+                                font_size="11px",
+                                font_weight="600",
+                                letter_spacing="0.08em",
+                                text_transform="uppercase",
+                            ),
+                            rx.hstack(
+                                # Круглый кроп-превью
+                                rx.vstack(
+                                    rx.box(
+                                        rx.el.img(
+                                            src=ProfileState.avatar_preview_url,
+                                            alt="Preview",
+                                            width="100%",
+                                            height="100%",
+                                            object_fit="cover",
+                                        ),
+                                        width="96px",
+                                        height="96px",
+                                        border_radius="50%",
+                                        overflow="hidden",
+                                        border="3px solid rgba(59,130,246,0.5)",
+                                        box_shadow="0 0 0 4px rgba(59,130,246,0.15), 0 8px 24px rgba(0,0,0,0.4)",
+                                        flex_shrink="0",
+                                    ),
+                                    rx.text(
+                                        "96×96",
+                                        color=TEXT_TERTIARY,
+                                        font_size="11px",
+                                        margin_top="6px",
+                                    ),
+                                    align="center",
+                                    spacing="0",
+                                ),
+                                # Квадратный превью
+                                rx.vstack(
+                                    rx.box(
+                                        rx.el.img(
+                                            src=ProfileState.avatar_preview_url,
+                                            alt="Preview",
+                                            width="100%",
+                                            height="100%",
+                                            object_fit="cover",
+                                        ),
+                                        width="64px",
+                                        height="64px",
+                                        border_radius="14px",
+                                        overflow="hidden",
+                                        border="2px solid rgba(255,255,255,0.1)",
+                                        box_shadow="0 4px 12px rgba(0,0,0,0.3)",
+                                        flex_shrink="0",
+                                    ),
+                                    rx.text(
+                                        "64×64",
+                                        color=TEXT_TERTIARY,
+                                        font_size="11px",
+                                        margin_top="6px",
+                                    ),
+                                    align="center",
+                                    spacing="0",
+                                ),
+                                # Маленький превью
+                                rx.vstack(
+                                    rx.box(
+                                        rx.el.img(
+                                            src=ProfileState.avatar_preview_url,
+                                            alt="Preview",
+                                            width="100%",
+                                            height="100%",
+                                            object_fit="cover",
+                                        ),
+                                        width="36px",
+                                        height="36px",
+                                        border_radius="50%",
+                                        overflow="hidden",
+                                        border="2px solid rgba(255,255,255,0.08)",
+                                        flex_shrink="0",
+                                    ),
+                                    rx.text(
+                                        "36×36",
+                                        color=TEXT_TERTIARY,
+                                        font_size="11px",
+                                        margin_top="6px",
+                                    ),
+                                    align="center",
+                                    spacing="0",
+                                ),
+                                gap="28px",
+                                align="end",
+                                justify_content="center",
+                                padding="20px",
+                                background="rgba(255,255,255,0.02)",
+                                border="1px solid rgba(255,255,255,0.07)",
+                                border_radius="14px",
+                                width="100%",
+                            ),
+                            spacing="2",
+                            width="100%",
+                        ),
+                        rx.box(),
                     ),
+                    # Upload zone
                     rx.upload(
                         rx.vstack(
-                            rx.icon("upload", size=32, color=TEXT_TERTIARY),
-                            rx.text(
-                                "Перетащите файл сюда или кликните для выбора",
-                                color=TEXT_SECONDARY,
-                                font_size="13px",
-                                text_align="center",
+                            rx.cond(
+                                ProfileState.avatar_preview_url != "",
+                                rx.icon("refresh-cw", size=24, color=ACCENT_BLUE),
+                                rx.icon("upload", size=28, color=TEXT_TERTIARY),
+                            ),
+                            rx.vstack(
+                                rx.text(
+                                    rx.cond(
+                                        ProfileState.avatar_preview_url != "",
+                                        "Выбрать другой файл",
+                                        "Перетащите PNG сюда или кликните",
+                                    ),
+                                    color=TEXT_SECONDARY,
+                                    font_size="13px",
+                                    font_weight="500",
+                                    text_align="center",
+                                ),
+                                rx.hstack(
+                                    rx.box(
+                                        rx.text(
+                                            "PNG",
+                                            color=ACCENT_BLUE,
+                                            font_size="11px",
+                                            font_weight="700",
+                                        ),
+                                        padding="3px 8px",
+                                        background="rgba(59,130,246,0.12)",
+                                        border="1px solid rgba(59,130,246,0.25)",
+                                        border_radius="6px",
+                                    ),
+                                    rx.text(
+                                        "Макс. размер: 5 МБ",
+                                        color=TEXT_TERTIARY,
+                                        font_size="11px",
+                                    ),
+                                    gap="8px",
+                                    align="center",
+                                    justify_content="center",
+                                ),
+                                spacing="2",
+                                align="center",
                             ),
                             spacing="2",
                             align="center",
                         ),
-                        accept={"image/*": [".png", ".jpg", ".jpeg", ".gif"]},
+                        id="avatar-upload",
+                        accept={"image/png": [".png"]},
                         max_files=1,
-                        border="2px dashed rgba(255, 255, 255, 0.1)",
-                        border_radius="12px",
-                        padding="32px",
+                        on_drop=ProfileState.handle_avatar_select,
+                        border=rx.cond(
+                            ProfileState.avatar_preview_url != "",
+                            f"2px dashed {ACCENT_BLUE}44",
+                            "2px dashed rgba(255, 255, 255, 0.1)",
+                        ),
+                        border_radius="14px",
+                        padding="20px 28px",
                         width="100%",
-                        background="rgba(255,255,255,0.02)",
+                        background=rx.cond(
+                            ProfileState.avatar_preview_url != "",
+                            "rgba(59,130,246,0.03)",
+                            "rgba(255,255,255,0.02)",
+                        ),
+                        cursor="pointer",
                         _hover={"border_color": ACCENT_BLUE, "background": "rgba(59,130,246,0.05)"},
+                        transition="all 0.2s ease",
                     ),
+                    # Error message
+                    rx.cond(
+                        ProfileState.avatar_upload_error != "",
+                        rx.hstack(
+                            rx.icon("alert-circle", size=14, color=DANGER_RED),
+                            rx.text(
+                                ProfileState.avatar_upload_error,
+                                color=DANGER_RED,
+                                font_size="13px",
+                            ),
+                            gap="6px",
+                            align="center",
+                            padding="10px 14px",
+                            background="rgba(239,68,68,0.08)",
+                            border="1px solid rgba(239,68,68,0.2)",
+                            border_radius="10px",
+                            width="100%",
+                        ),
+                        rx.box(),
+                    ),
+                    # Action buttons
                     rx.hstack(
                         rx.el.button(
                             "Отмена",
@@ -1066,19 +1416,46 @@ def _avatar_upload_modal() -> rx.Component:
                             padding="10px 20px",
                             border_radius="10px",
                             cursor="pointer",
+                            transition="all 0.2s ease",
+                            _hover={"background": "rgba(255,255,255,0.09)"},
                             on_click=ProfileState.close_avatar_upload,
                         ),
                         rx.el.button(
-                            "Загрузить",
+                            rx.hstack(
+                                rx.icon("check", size=15),
+                                rx.text("Сохранить"),
+                                gap="6px",
+                                align="center",
+                            ),
                             color="white",
                             font_size="14px",
                             font_weight="600",
-                            background=f"linear-gradient(135deg, {ACCENT_BLUE}, {ACCENT_PURPLE})",
-                            border="none",
+                            background=rx.cond(
+                                ProfileState.avatar_preview_url != "",
+                                "rgba(34,197,94,0.2)",
+                                "rgba(255,255,255,0.08)",
+                            ),
+                            border=rx.cond(
+                                ProfileState.avatar_preview_url != "",
+                                "1px solid rgba(34,197,94,0.5)",
+                                "1px solid rgba(255,255,255,0.08)",
+                            ),
                             padding="10px 20px",
                             border_radius="10px",
-                            cursor="pointer",
-                            on_click=lambda: ProfileState.upload_avatar(rx.upload_files()),
+                            cursor=rx.cond(ProfileState.avatar_preview_url != "", "pointer", "default"),
+                            opacity=rx.cond(ProfileState.avatar_preview_url != "", "1", "0.4"),
+                            transition="all 0.2s ease",
+                            box_shadow=rx.cond(
+                                ProfileState.avatar_preview_url != "",
+                                "0 0 12px rgba(34,197,94,0.3)",
+                                "none",
+                            ),
+                            _hover=rx.cond(
+                                ProfileState.avatar_preview_url != "",
+                                {"box_shadow": "0 0 20px rgba(34,197,94,0.5)", "transform": "translateY(-1px)"},
+                                {},
+                            ),
+                            on_click=ProfileState.upload_avatar,
                         ),
                         spacing="3",
                         width="100%",
@@ -1092,13 +1469,13 @@ def _avatar_upload_modal() -> rx.Component:
                 left="50%",
                 transform="translate(-50%, -50%)",
                 z_index="301",
-                background="rgba(12,12,20,0.95)",
+                background="rgba(12,12,20,0.96)",
                 border="1px solid rgba(255, 255, 255, 0.1)",
                 border_radius="22px",
                 padding="28px",
                 backdrop_filter="blur(40px) saturate(180%)",
                 box_shadow="0 32px 80px rgba(0,0,0,0.6)",
-                width="min(420px, 90vw)",
+                width="min(480px, 92vw)",
             ),
         ),
     )

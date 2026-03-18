@@ -1,5 +1,6 @@
 import reflex as rx
 from koritsu.state.auth_state import AuthState
+from koritsu.components.header import header
 
 # ── Palette ────────────────────────────────────────────────────────────────
 BG          = "linear-gradient(135deg, #08080f 0%, #0b0f1a 50%, #07101e 100%)"
@@ -94,25 +95,42 @@ def _auth_nav_buttons() -> rx.Component:
     )
 
 
-def _user_avatar() -> rx.Component:
-    """Circular avatar with user initial."""
+def _user_avatar(size: str = "34px", font_size: str = "13px") -> rx.Component:
+    """Circular avatar — shows photo if available, otherwise initial."""
     return rx.box(
-        rx.text(
-            AuthState.user_initial,
-            color="white",
-            font_size="13px",
-            font_weight="700",
-            font_family=SANS,
+        rx.cond(
+            AuthState.user_icon != "",
+            rx.el.img(
+                src=AuthState.user_icon,
+                alt="Avatar",
+                width="100%",
+                height="100%",
+                object_fit="cover",
+                border_radius="50%",
+            ),
+            rx.text(
+                AuthState.user_initial,
+                color="white",
+                font_size=font_size,
+                font_weight="700",
+                font_family=SANS,
+            ),
         ),
-        width="34px",
-        height="34px",
-        min_width="34px",
-        background=f"linear-gradient(135deg,{ACCENT},#2563eb)",
+        width=size,
+        height=size,
+        min_width=size,
+        background=rx.cond(
+            AuthState.user_icon != "",
+            "transparent",
+            f"linear-gradient(135deg,{ACCENT},#2563eb)",
+        ),
         border_radius="50%",
+        overflow="hidden",
         display="flex",
         align_items="center",
         justify_content="center",
         border="2px solid rgba(255,255,255,0.15)",
+        flex_shrink="0",
     )
 
 
@@ -402,7 +420,7 @@ def _welcome_strip() -> rx.Component:
         rx.vstack(
             # Welcome row
             rx.hstack(
-                _user_avatar(),
+                _user_avatar(size="56px", font_size="20px"),
                 rx.vstack(
                     rx.hstack(
                         rx.text(
@@ -538,6 +556,11 @@ def _register_form() -> rx.Component:
             AuthState.register_password_confirm,
             AuthState.set_register_password_confirm,
             input_type="password",
+        ),
+        _modal_input(
+            "Реферальный код (необязательно)",
+            AuthState.register_ref_code,
+            AuthState.set_register_ref_code,
         ),
         _submit_btn("Создать аккаунт", AuthState.do_register),
         spacing="3",
@@ -782,7 +805,7 @@ def _footer() -> rx.Component:
 
 def home_page() -> rx.Component:
     return rx.box(
-        _nav(),
+        header(show_nav_links=True),
         _auth_modal(),
         _avatar_upload_modal(),
 

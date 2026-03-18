@@ -1,6 +1,7 @@
 import reflex as rx
 from koritsu.state.fragmos_state import FragmosState
 from koritsu.state.auth_state import AuthState
+from koritsu.components.header import header
 
 # ── Palette ───────────────────────────────────────────────────────────────────
 BG          = "linear-gradient(135deg, #08080f 0%, #0b0f1a 50%, #07101e 100%)"
@@ -1400,7 +1401,7 @@ def fragmos_page() -> rx.Component:
             "</style>"
         ),
         # Global nav bar
-        _nav(),
+        header(show_nav_links=False),
         rx.cond(
             FragmosState.is_authenticated,
             rx.box(

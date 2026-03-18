@@ -1,347 +1,445 @@
+import re
 import reflex as rx
 import httpx
+from pydantic import BaseModel
+from koritsu.state.auth_state import AuthState
 
 API_URL = "http://localhost:8001"
 
 
-class ReferralData(rx.Base):
-    """Модель данных для реферала."""
+class FileData(BaseModel):
     name: str
-    email: str
-    status: str  # 'active' или 'pending'
-    earnings: str
-    date: str
-
-
-class FileData(rx.Base):
-    """Модель данных для файла."""
-    name: str
-    file_type: str  # 'document', 'image', 'audio', 'video'
+    file_type: str
     size: str
     date: str
 
 
+class ReferralData(rx.Base):
+    name: str = ""
+    earnings: str = ""
+    date: str = ""
+    status: str = "active"
+
+
 class ProfileState(rx.State):
-    """Состояние страницы профиля пользователя."""
-    
+
     # === Аккаунт ===
     editing_password: bool = False
     editing_username: bool = False
     editing_display_name: bool = False
-    
+
     password: str = "••••••••"
     password_input: str = ""
+    old_password_input: str = ""
     username: str = ""
     username_input: str = ""
     display_name: str = ""
     display_name_input: str = ""
-    email: str = ""
     avatar_url: str = ""
-    
+
+    profile_message: str = ""
+    profile_message_is_error: bool = False
+
     # === Файлы ===
     search_query: str = ""
-    
     files: list[FileData] = []
-    
+
     # === Реферальная программа ===
     copied: bool = False
-    is_connected: bool = True
-    
+    is_connected: bool = False
     referral_link: str = ""
-    show_avatar_upload: bool = False
-    
+    referral_count: int = 0
+    ref_uuid: str = ""
     referrals: list[ReferralData] = []
-    
+
+    # === Аватарка ===
+    show_avatar_upload: bool = False
+    avatar_preview_url: str = ""
+    avatar_upload_error: str = ""
+    avatar_pending_b64: str = ""
+    avatar_pending_filename: str = ""
+
     # === Computed vars ===
-    
+
     @rx.var
     def current_page(self) -> str:
-        """Текущая страница для подсветки в сайдбаре."""
-        return self.router.page.path
-    
+        return self.router.url.path
+
     @rx.var
     def is_account_active(self) -> bool:
         return self.current_page == "/profile"
-    
+
     @rx.var
     def is_files_active(self) -> bool:
         return self.current_page == "/profile/files"
-    
+
     @rx.var
     def is_referral_active(self) -> bool:
         return self.current_page == "/profile/referral"
-    
+
     @rx.var
     def filtered_files(self) -> list[FileData]:
-        """Фильтрация файлов по поисковому запросу."""
         if not self.search_query:
             return self.files
         query = self.search_query.lower()
         return [f for f in self.files if query in f.name.lower()]
-    
-    @rx.var
-    def total_earnings(self) -> str:
-        """Общая сумма заработка от рефералов."""
-        total = 0
-        for ref in self.referrals:
-            earnings_str = ref.earnings.replace("₽", "").replace(",", "")
-            if earnings_str.isdigit():
-                total += int(earnings_str)
-        return f"₽{total:,}"
-    
-    @rx.var
-    def active_referrals_count(self) -> str:
-        """Количество активных рефералов."""
-        return str(sum(1 for ref in self.referrals if ref.status == "active"))
-    
-    @rx.var
-    def total_referrals_count(self) -> str:
-        """Общее количество рефералов."""
-        return str(len(self.referrals))
-    
+
     @rx.var
     def user_initial(self) -> str:
-        """Первая буква имени для аватара."""
         if self.display_name:
             return self.display_name[0].upper()
         elif self.username:
             return self.username[0].upper()
         return "?"
-    
-    # === Методы ===
-    
+
+    @rx.var
+    def total_referrals_count(self) -> str:
+        return str(self.referral_count)
+
+    @rx.var
+    def pw_check_length(self) -> bool:
+        return len(self.password_input) >= 12
+
+    @rx.var
+    def pw_check_upper(self) -> bool:
+        return bool(re.search(r"[A-ZА-ЯЁ]", self.password_input))
+
+    @rx.var
+    def pw_check_special(self) -> bool:
+        return bool(re.search(r"""[!@#$%^&*()\-_=+\[\]{}|;:'",.<>?/`~]""", self.password_input))
+
+    # === Setters ===
+
     def set_password_input(self, value: str):
         self.password_input = value
-    
+
+    def set_old_password_input(self, value: str):
+        self.old_password_input = value
+
     def set_username_input(self, value: str):
         self.username_input = value
-    
+
     def set_display_name_input(self, value: str):
         self.display_name_input = value
-    
+
+    def set_search_query(self, value: str):
+        self.search_query = value
+
+    # === Валидация ===
+
+    def _validate_password(self, password: str) -> str | None:
+        if len(password) < 12:
+            return "Пароль должен быть не менее 12 символов"
+        if not re.search(r"[A-ZА-ЯЁ]", password):
+            return "Пароль должен содержать хотя бы одну заглавную букву"
+        if not re.search(r"""[!@#$%^&*()\-_=+\[\]{}|;:'",.<>?/`~]""", password):
+            return "Пароль должен содержать хотя бы один спецсимвол"
+        return None
+
+    # === Пароль ===
+
     def start_edit_password(self):
         self.editing_password = True
         self.password_input = ""
-    
-    def save_password(self):
-        """Сохранение нового пароля."""
-        if not self.password_input:
-            return
-        
-        try:
-            import httpx
-            auth_state = self.get_state("koritsu.state.auth_state.AuthState")
-            if auth_state.user_uuid:
-                with httpx.Client() as client:
-                    resp = client.post(
-                        f"{API_URL}/user/{auth_state.user_uuid}/change-password",
-                        json={"new_password": self.password_input},
-                        timeout=10,
-                    )
-                    if resp.status_code == 200:
-                        self.password = "••••••••"
-        except Exception:
-            pass
-        
-        self.editing_password = False
-        self.password_input = ""
-    
+        self.old_password_input = ""
+        self.profile_message = ""
+
     def cancel_edit_password(self):
         self.editing_password = False
-        self.password = "••••••••"
         self.password_input = ""
-    
+        self.old_password_input = ""
+        self.profile_message = ""
+
+    async def save_password(self):
+        if not self.password_input or not self.old_password_input:
+            self.profile_message = "Заполните оба поля пароля"
+            self.profile_message_is_error = True
+            return
+
+        err = self._validate_password(self.password_input)
+        if err:
+            self.profile_message = err
+            self.profile_message_is_error = True
+            return
+
+        auth_state = await self.get_state(AuthState)
+        if not auth_state.user_uuid:
+            return
+
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.patch(
+                    f"{API_URL}/user/{auth_state.user_uuid}",
+                    json={"item": "password", "newitem": self.password_input, "olditem": self.old_password_input},
+                    timeout=10,
+                )
+                data = resp.json()
+        except Exception:
+            self.profile_message = "Ошибка подключения к серверу"
+            self.profile_message_is_error = True
+            return
+
+        if "error" in data:
+            self.profile_message = data["error"]
+            self.profile_message_is_error = True
+        else:
+            self.profile_message = "Пароль изменён"
+            self.profile_message_is_error = False
+            self.editing_password = False
+            self.password_input = ""
+            self.old_password_input = ""
+
+    # === Имя пользователя ===
+
     def start_edit_username(self):
         self.editing_username = True
         self.username_input = self.username
-    
-    def save_username(self):
-        """Сохранение нового имени пользователя."""
-        if not self.username_input.strip():
-            self.editing_username = False
-            self.username_input = ""
-            return
-        
-        try:
-            import httpx
-            auth_state = self.get_state("koritsu.state.auth_state.AuthState")
-            if auth_state.user_uuid:
-                with httpx.Client() as client:
-                    resp = client.post(
-                        f"{API_URL}/user/{auth_state.user_uuid}/change-username",
-                        json={"new_username": self.username_input.strip()},
-                        timeout=10,
-                    )
-                    if resp.status_code == 200:
-                        self.username = self.username_input.strip()
-                        self.referral_link = f"https://example.com/ref/{self.username}"
-        except Exception:
-            pass
-        
-        self.editing_username = False
-        self.username_input = ""
-    
+        self.profile_message = ""
+
     def cancel_edit_username(self):
         self.editing_username = False
         self.username_input = ""
-    
+        self.profile_message = ""
+
+    async def save_username(self):
+        if not self.username_input.strip():
+            self.editing_username = False
+            return
+
+        auth_state = await self.get_state(AuthState)
+        if not auth_state.user_uuid:
+            return
+
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.patch(
+                    f"{API_URL}/user/{auth_state.user_uuid}",
+                    json={"item": "username", "newitem": self.username_input.strip()},
+                    timeout=10,
+                )
+                data = resp.json()
+        except Exception:
+            self.profile_message = "Ошибка подключения к серверу"
+            self.profile_message_is_error = True
+            return
+
+        if "error" in data:
+            self.profile_message = data["error"]
+            self.profile_message_is_error = True
+        else:
+            self.username = self.username_input.strip()
+            self.profile_message = "Имя пользователя изменено"
+            self.profile_message_is_error = False
+            self.editing_username = False
+            self.username_input = ""
+
+    # === Отображаемое имя ===
+
     def start_edit_display_name(self):
         self.editing_display_name = True
         self.display_name_input = self.display_name
-    
-    def save_display_name(self):
-        """Сохранение нового отображаемого имени."""
-        if not self.display_name_input.strip():
-            self.editing_display_name = False
-            self.display_name_input = ""
-            return
-        
-        try:
-            import httpx
-            auth_state = self.get_state("koritsu.state.auth_state.AuthState")
-            if auth_state.user_uuid:
-                with httpx.Client() as client:
-                    resp = client.post(
-                        f"{API_URL}/user/{auth_state.user_uuid}/change-display-name",
-                        json={"new_display_name": self.display_name_input.strip()},
-                        timeout=10,
-                    )
-                    if resp.status_code == 200:
-                        self.display_name = self.display_name_input.strip()
-        except Exception:
-            pass
-        
-        self.editing_display_name = False
-        self.display_name_input = ""
-    
+        self.profile_message = ""
+
     def cancel_edit_display_name(self):
         self.editing_display_name = False
         self.display_name_input = ""
-    
+        self.profile_message = ""
+
+    async def save_display_name(self):
+        if not self.display_name_input.strip():
+            self.editing_display_name = False
+            return
+
+        auth_state = await self.get_state(AuthState)
+        if not auth_state.user_uuid:
+            return
+
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.patch(
+                    f"{API_URL}/user/{auth_state.user_uuid}",
+                    json={"item": "display_name", "newitem": self.display_name_input.strip()},
+                    timeout=10,
+                )
+                data = resp.json()
+        except Exception:
+            self.profile_message = "Ошибка подключения к серверу"
+            self.profile_message_is_error = True
+            return
+
+        if "error" in data:
+            self.profile_message = data["error"]
+            self.profile_message_is_error = True
+        else:
+            self.display_name = self.display_name_input.strip()
+            self.profile_message = "Отображаемое имя изменено"
+            self.profile_message_is_error = False
+            self.editing_display_name = False
+            self.display_name_input = ""
+
+    # === Аватарка ===
+
+    def open_avatar_upload(self):
+        self.show_avatar_upload = True
+        self.avatar_preview_url = ""
+        self.avatar_upload_error = ""
+        self.avatar_pending_b64 = ""
+        self.avatar_pending_filename = ""
+
+    def close_avatar_upload(self):
+        self.show_avatar_upload = False
+        self.avatar_preview_url = ""
+        self.avatar_upload_error = ""
+        self.avatar_pending_b64 = ""
+        self.avatar_pending_filename = ""
+
+    async def handle_avatar_select(self, files: list[rx.UploadFile]):
+        """Сохраняет файл в state и показывает превью."""
+        if not files:
+            return
+        file = files[0]
+        if not file.filename.lower().endswith(".png"):
+            self.avatar_upload_error = "Разрешены только файлы формата PNG"
+            self.avatar_preview_url = ""
+            self.avatar_pending_b64 = ""
+            return
+        self.avatar_upload_error = ""
+        import base64
+        upload_data = await file.read()
+        b64 = base64.b64encode(upload_data).decode("utf-8")
+        self.avatar_preview_url = f"data:image/png;base64,{b64}"
+        self.avatar_pending_b64 = b64
+        self.avatar_pending_filename = file.filename
+
+    async def upload_avatar(self):
+        """Загружает сохранённый файл на сервер."""
+        if not self.avatar_pending_b64:
+            self.avatar_upload_error = "Сначала выберите файл"
+            return
+
+        auth_state = await self.get_state(AuthState)
+        if not auth_state.user_uuid:
+            self.show_avatar_upload = False
+            return
+
+        import base64
+        upload_data = base64.b64decode(self.avatar_pending_b64)
+
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.post(
+                    f"{API_URL}/user/{auth_state.user_uuid}/avatar",
+                    files={"file": (self.avatar_pending_filename, upload_data, "image/png")},
+                    timeout=30,
+                )
+                data = resp.json()
+        except Exception:
+            self.avatar_upload_error = "Ошибка подключения к серверу"
+            return
+
+        if "icon" in data:
+            import time
+            ts = int(time.time())
+            self.avatar_url = f"{API_URL}/{data['icon']}?t={ts}"
+            # Синхронизируем с AuthState для хедера и home
+            auth_state.user_icon = f"{API_URL}/{data['icon']}?t={ts}"
+
+        self.show_avatar_upload = False
+        self.avatar_preview_url = ""
+        self.avatar_upload_error = ""
+        self.avatar_pending_b64 = ""
+        self.avatar_pending_filename = ""
+
+    # === Реферальная программа ===
+
     async def copy_referral_link(self):
-        """Копирование реферальной ссылки."""
         yield rx.set_clipboard(self.referral_link)
         self.copied = True
         yield
         await rx.sleep(2)
         self.copied = False
-    
-    def connect_referral_program(self):
-        """Подключение к реферальной программе."""
-        self.is_connected = True
-    
-    def open_avatar_upload(self):
-        """Открыть диалог загрузки аватарки."""
-        self.show_avatar_upload = True
-    
-    def close_avatar_upload(self):
-        """Закрыть диалог загрузки аватарки."""
-        self.show_avatar_upload = False
-    
-    async def upload_avatar(self, files: list[rx.UploadFile]):
-        """Загрузка аватарки пользователя."""
-        if not files:
-            return
-        
-        try:
-            auth_state = await self.get_state("koritsu.state.auth_state.AuthState")
-            if not auth_state.user_uuid:
-                return
-                
-            file = files[0]
-            upload_data = await file.read()
-            
-            async with httpx.AsyncClient() as client:
-                files_dict = {"avatar": (file.filename, upload_data, file.content_type)}
-                resp = await client.post(
-                    f"{API_URL}/user/{auth_state.user_uuid}/avatar",
-                    files=files_dict,
-                    timeout=30,
-                )
-                data = resp.json()
-            
-            if "icon" in data:
-                self.avatar_url = f"{API_URL}/{data['icon']}"
-            
-            self.show_avatar_upload = False
-        except Exception:
-            self.show_avatar_upload = False
-    
-    async def load_user_data(self):
-        """Загрузка данных пользователя из API."""
-        # Получаем данные из AuthState
-        try:
-            auth_state = await self.get_state(AuthState)
-        except Exception:
-            return
-        
+
+    async def connect_referral_program(self):
+        auth_state = await self.get_state(AuthState)
         if not auth_state.user_uuid:
-            # Если не авторизован, перенаправляем на главную
             return
-        
-        user_uuid = auth_state.user_uuid
-        
-        # Загружаем данные пользователя
+
         try:
             async with httpx.AsyncClient() as client:
-                resp = await client.get(
-                    f"{API_URL}/user/{user_uuid}",
+                resp = await client.post(
+                    f"{API_URL}/user/{auth_state.user_uuid}/referral",
                     timeout=10,
                 )
                 data = resp.json()
         except Exception:
             return
-        
+
+        if "ref_uuid" in data:
+            self.ref_uuid = data["ref_uuid"]
+            self.referral_link = f"https://koritsu.app/ref/{data['ref_uuid']}"
+            self.is_connected = True
+
+    # === Загрузка данных ===
+
+    async def load_user_data(self):
+        auth_state = await self.get_state(AuthState)
+
+        if not auth_state.user_uuid:
+            return rx.redirect("/")
+
+        user_uuid = auth_state.user_uuid
+
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(f"{API_URL}/user/{user_uuid}", timeout=10)
+                data = resp.json()
+        except Exception:
+            return
+
         if "user_data" in data:
             ud = data["user_data"]
             self.username = ud.get("username", "")
             self.display_name = ud.get("display_name") or ud.get("username", "")
-            self.email = ud.get("email", "")
-            
-            # Аватар
             icon = ud.get("icon") or ""
-            if icon:
-                self.avatar_url = f"{API_URL}/{icon}"
-            else:
-                self.avatar_url = ""
-            
-            # Реферальная ссылка
-            self.referral_link = f"https://example.com/ref/{self.username}"
-            
-            # Загружаем файлы пользователя
-            try:
-                async with httpx.AsyncClient() as client:
-                    files_resp = await client.get(
-                        f"{API_URL}/user/{user_uuid}/fragmos",
-                        timeout=10,
-                    )
-                    files_data = files_resp.json()
-                    if "files" in files_data:
-                        self.files = [
-                            FileData(name=f, file_type="document", size="Неизвестно", date="Неизвестно")
-                            for f in files_data["files"]
-                        ]
-            except Exception:
-                pass
-            
-            # Загружаем рефералов
-            try:
-                async with httpx.AsyncClient() as client:
-                    refs_resp = await client.get(
-                        f"{API_URL}/user/{user_uuid}/referrals",
-                        timeout=10,
-                    )
-                    refs_data = refs_resp.json()
-                    if "referrals" in refs_data:
-                        self.referrals = [
-                            ReferralData(
-                                name=r.get("name", ""),
-                                email=r.get("email", ""),
-                                status=r.get("status", "pending"),
-                                earnings=r.get("earnings", "₽0"),
-                                date=r.get("date", ""),
-                            )
-                            for r in refs_data["referrals"]
-                        ]
-            except Exception:
-                pass
+            import time as _time
+            self.avatar_url = f"{API_URL}/{icon}?t={int(_time.time())}" if icon else ""
+
+        # Загружаем реферальные данные
+        try:
+            async with httpx.AsyncClient() as client:
+                ref_resp = await client.get(f"{API_URL}/user/{user_uuid}/referral", timeout=10)
+                ref_data = ref_resp.json()
+        except Exception:
+            return
+
+        if ref_data.get("referral"):
+            r = ref_data["referral"]
+            self.ref_uuid = r.get("ref_uuid", "")
+            self.referral_count = r.get("referral_count", 0)
+            self.referral_link = f"https://koritsu.app/ref/{self.ref_uuid}"
+            self.is_connected = True
+        else:
+            self.is_connected = False
+            self.referrals = []
+            return
+
+        # Загружаем список рефералов
+        try:
+            async with httpx.AsyncClient() as client:
+                det_resp = await client.get(
+                    f"{API_URL}/user/{user_uuid}/referral/details", timeout=10
+                )
+                det_data = det_resp.json()
+        except Exception:
+            return
+
+        raw = det_data.get("referrals", [])
+        self.referrals = [
+            ReferralData(
+                name=item.get("name", ""),
+                earnings=item.get("earnings", "0 бонусов"),
+                date=item.get("date", ""),
+                status=item.get("status", "active"),
+            )
+            for item in raw
+        ]

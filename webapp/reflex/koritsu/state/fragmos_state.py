@@ -3,17 +3,15 @@ import base64
 import datetime
 import json
 import os
-import sys
-import tempfile
 import uuid
+import httpx
 import reflex as rx
-from .auth_state import AuthState 
+from .auth_state import AuthState
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 _STATE_DIR   = os.path.dirname(os.path.abspath(__file__))
 SCHEMES_DIR  = os.path.normpath(os.path.join(_STATE_DIR, "../../server/files/users"))
 BUG_DIR      = os.path.normpath(os.path.join(_STATE_DIR, "../../../db/bug_reports"))
-_FRAGMOS_DIR = os.path.normpath(os.path.join(_STATE_DIR, "../../../../modules/fragmos"))
 
 API_URL = "http://localhost:8001"
 # ── Models ────────────────────────────────────────────────────────────────────
@@ -56,52 +54,6 @@ def _make_diagram_html(xml: str) -> str:
         "}}catch(ex){}});"
         "</script></body></html>"
     )
-
-
-def _run_pipeline(
-        code: str,
-        xml_path: str,
-        cfg: dict,
-        model_id: str | None,
-        token_budget: int | None):
-    """Blocking call to the Fragmos pipeline. Runs in a thread."""
-    if _FRAGMOS_DIR not in sys.path:
-        sys.path.insert(0, _FRAGMOS_DIR)
-
-    tmp_dir   = tempfile.mkdtemp(prefix="fragmos_")
-    code_path = os.path.join(tmp_dir, "code.txt")
-    json_path = os.path.join(tmp_dir, "code.json")
-
-    with open(code_path, "w", encoding="utf-8") as f:
-        f.write(code)
-
-    try:
-        from pipeline import run as pipeline_run          # type: ignore
-        from pipeline import InsufficientTokensError      # type: ignore
-
-        result_path, tokens = pipeline_run(
-            code_path, xml_path,
-            cfg_overrides=cfg,
-            model_id=model_id,
-            token_budget=token_budget,
-        )
-        ai_json = ""
-        try:
-            with open(json_path, "r", encoding="utf-8") as jf:
-                ai_json = jf.read()
-        except OSError:
-            pass
-        return result_path, tokens, ai_json
-    finally:
-        for p in (code_path, json_path):
-            try:
-                os.remove(p)
-            except OSError:
-                pass
-        try:
-            os.rmdir(tmp_dir)
-        except OSError:
-            pass
 
 
 class FragmosState(rx.State):
@@ -340,12 +292,6 @@ class FragmosState(rx.State):
             self.generation_error = f"Недостаточно токенов. Баланс: {self.user_tokens}"
             return
 
-        schemes_dir = self._get_schemes_dir()
-        os.makedirs(schemes_dir, exist_ok=True)
-        slug = str(uuid.uuid4())[:8]
-        fname = f"Схема_{slug}.xml"
-        xml_path = os.path.join(schemes_dir, fname)
-
         saved_code = self.code_input
         self.code_input = ""
         self.is_generating = True
@@ -353,54 +299,97 @@ class FragmosState(rx.State):
         self.last_submitted_code = saved_code
         yield
 
-        success = False
-        tokens = 0
-        ai_json = ""
+        # Получаем username для балансера
+        auth_state = await self.get_state(AuthState)
+        username = auth_state.username or "unknown"
+
+        # Отправляем задачу в балансер
+        payload = {
+            "code": saved_code,
+            "user_uuid": self.user_uuid,
+            "model_id": MODELS.get(self.selected_model),
+            "token_budget": self.user_tokens,
+            "cfg": self._cfg_dict(),
+        }
+
         try:
-            _result, tokens, ai_json = await asyncio.to_thread(
-                _run_pipeline,
-                saved_code,
-                xml_path,
-                self._cfg_dict(),
-                MODELS.get(self.selected_model),
-                self.user_tokens,
-            )
-            
-            # Проверка: достаточно ли токенов для списания
-            if tokens > self.user_tokens:
-                self.generation_error = f"Недостаточно токенов. Требуется: {tokens}, ваш баланс: {self.user_tokens}"
-                try:
-                    if os.path.exists(xml_path):
-                        os.remove(xml_path)
-                except OSError:
-                    pass
-            else:
-                # Списываем токены через API
-                deduct_success, deduct_error = await self._deduct_tokens(tokens)
-                if not deduct_success:
-                    self.generation_error = f"Ошибка списания токенов: {deduct_error}"
-                    try:
-                        if os.path.exists(xml_path):
-                            os.remove(xml_path)
-                    except OSError:
-                        pass
-                else:
+            async with httpx.AsyncClient() as client:
+                resp = await client.post(
+                    f"{API_URL}/balancer/task",
+                    json={
+                        "priority": 2,
+                        "task_dest": "fragmos",
+                        "answ_to": self.user_uuid,
+                        "username": username,
+                        "payload": payload,
+                    },
+                    timeout=10,
+                )
+                data = resp.json()
+
+            if "error" in data:
+                self.generation_error = data["error"]
+                self.is_generating = False
+                return
+
+            task_uuid = data["task"]["task_uuid"]
+
+            # Поллим статус задачи
+            success = False
+            for _ in range(150):  # макс ~5 мин (150 * 2 сек)
+                await asyncio.sleep(2)
+                async with httpx.AsyncClient() as client:
+                    resp = await client.get(
+                        f"{API_URL}/balancer/task/{task_uuid}",
+                        timeout=10,
+                    )
+                    task_data = resp.json().get("task", {})
+
+                status = task_data.get("status")
+
+                if status == "completed":
+                    result = task_data.get("result", {})
+                    tokens = result.get("charged_tokens", 0)
+                    fname = result.get("xml_filename", "")
+
+                    # Списываем токены
+                    if tokens > 0:
+                        deduct_ok, deduct_err = await self._deduct_tokens(tokens)
+                        if not deduct_ok:
+                            self.generation_error = f"Ошибка списания токенов: {deduct_err}"
+                            break
+
                     self.last_tokens = tokens
-                    self.last_ai_response = ai_json
+                    self.last_ai_response = json.dumps(result)
                     success = True
+                    break
+
+                elif status == "failed":
+                    self.generation_error = task_data.get("error", "Ошибка генерации")
+                    self.last_ai_response = task_data.get("error", "")
+                    break
+
+                elif status == "expired":
+                    self.generation_error = task_data.get("error", "Превышено время ожидания")
+                    break
+
+                elif status == "cancelled":
+                    self.generation_error = "Задача отменена"
+                    break
+
+                # pending / running — продолжаем ждать
+
+            else:
+                self.generation_error = "Превышено время ожидания"
+
+            if success:
+                self._reload_schemes()
+                self.selected_chat_id = fname
+
         except Exception as exc:
             self.generation_error = str(exc)
             self.last_tokens = 0
             self.last_ai_response = str(exc)
-            try:
-                if os.path.exists(xml_path):
-                    os.remove(xml_path)
-            except OSError:
-                pass
-
-        if success:
-            self._reload_schemes()
-            self.selected_chat_id = fname
 
         self.is_generating = False
 

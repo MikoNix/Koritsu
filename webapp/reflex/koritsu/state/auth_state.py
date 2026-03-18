@@ -27,6 +27,7 @@ class AuthState(rx.State):
     register_username: str = ""
     register_password: str = ""
     register_password_confirm: str = ""
+    register_ref_code: str = ""
 
     # ── Feedback ───────────────────────────────────────────────────────────────
     auth_error: str = ""
@@ -82,6 +83,10 @@ class AuthState(rx.State):
         self.login_password = ""
         self.register_password = ""
         self.register_password_confirm = ""
+        self.register_ref_code = ""
+
+    def set_register_ref_code(self, value: str):
+        self.register_ref_code = value
 
     def switch_to_login(self):
         self.auth_tab = "login"
@@ -224,9 +229,14 @@ class AuthState(rx.State):
             return
 
         try:
+            ref_code = self.register_ref_code.strip()
+            if ref_code:
+                url = f"{API_URL}/register/ref/{ref_code}"
+            else:
+                url = f"{API_URL}/register"
             async with httpx.AsyncClient() as client:
                 resp = await client.post(
-                    f"{API_URL}/register",
+                    url,
                     json={
                         "username": self.register_username.strip(),
                         "password": self.register_password,
@@ -255,6 +265,7 @@ class AuthState(rx.State):
         self.login_username = self.register_username
         self.register_password = ""
         self.register_password_confirm = ""
+        self.register_ref_code = ""
 
     # ── Load user data ─────────────────────────────────────────────────────────
 
